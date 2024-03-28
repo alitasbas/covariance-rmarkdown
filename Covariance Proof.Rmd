@@ -1,0 +1,84 @@
+---
+title: "Covariance Proof"
+author: "Ali Taşbaş"
+date: "2024-03-28"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(1)
+```
+
+## Covariance of independent variables is 0
+
+I was asked to prove the above statement. As I'm more into the new tools the world has to offer, I decided to get help from R. Instead of directly proving it, I will prove that the contrary is not possible by constructing a hypothesis test. I hope you will find my first R markdown project entertaining Hocam.
+
+First things first, we will generate 75 observations from a normal and a uniform distribution each and calculate their covariance. We will repeat this process for 500 times. At the end of this process, we will have 500 different covariances for 500 different combinations of two independent variables.
+
+```{r}
+covs <- c() # empty vector to store the sample covariances
+plots <- data.frame(x = c(), y = c(), sample_no = c()) # empty list to store the scatter plots
+
+for (i in 1:500) {
+  
+  x <- rnorm(75, 15, 8) # mean is 15, sd is 8
+  
+  y <- runif(75, 100, 150) # uniform between 100 and 150
+  
+  covs <- c(covs, cov(x, y))
+  plots <- rbind(plots, data.frame(x = x, y = y, sample_no = i))
+}
+```
+
+## A Scatter Plot
+
+Here are 4 examples of the 500 scatter plots representing the combinations of x and y.
+
+```{r echo=FALSE}
+library(ggplot2)
+plt_sample <- sample(plots$sample_no, 4)
+scatter_samples <- plots[plots$sample_no == plt_sample, ]
+ggplot(scatter_samples, aes(x, y)) +
+  geom_point() +
+  facet_wrap(. ~ sample_no)
+```
+
+## Distribution of Covariances
+
+Let's check the distribution of the covariances of the samples
+
+```{r echo=FALSE}
+hist(covs, nclass = 10, main = "Distribution of Sample Covariances")
+```
+
+```{r echo = FALSE}
+mu <- 0
+n <- 50
+mu_of_samples <- mean(covs)
+standard_error <- sd(covs) / sqrt(n)
+
+test_stat <- (mu_of_samples - mu) / standard_error
+
+prob <- pnorm(abs(test_stat), lower.tail = F)
+```
+
+## Hypothesis Test
+
+Now the fun part... We construct our null and alternative hypotheses.
+
+**H~0~: COV(X,Y)=0**\
+**H~A~: COV(X,Y)≠0**
+
+$\bar{x}$~cov~=`r mu_of_samples`  
+**S~e~**=`r standard_error`
+\[ \frac{{\bar{x} - \mu}}{{\sigma / \sqrt{n}}}  \]
+
+P~value~=`r prob`
+
+## Conclusion
+We cannot claim that the covariance of 2 independent variables is different from 0 as our p-value is quite big.
